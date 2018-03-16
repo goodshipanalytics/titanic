@@ -5,24 +5,49 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(caret)
+
+titanicTest <- read_csv("test.csv")
+titanicTraining <- read_csv("train.csv")
+
+titanicTest$Survived <- NA
+titanicTest$Test <- "test"
+titanicTraining$Test <- "train"
+
+
+titanicAll <- rbind(titanicTest, titanicTraining)
+
+sapply(titanicAll, function(x) {sum(is.na(x))})
+
+mean(titanicAll$Age, na.rm = TRUE) -> titanicAll$Age[is.na(titanicAll$Age)]
+
+mean(titanicAll$Fare, na.rm = TRUE) -> titanicAll$Fare[is.na(titanicAll$Fare)]
+
+titanicAll$Embarked <- replace(titanicAll$Embarked, 
+                               which(is.na(titanicAll$Embarked)), 'S')
+
+titanicAll$title <- gsub("^.*, (.*?)\\..*$", "\\1", titanicAll$Name) %>% 
+  as.factor()
+
+levels(titanicAll$title)[which(levels(titanicAll$title) %in% c("Capt", "Col", "Major","Dr", "Rev"))] <- "Officer"
+
+levels(titanicAll$title)[which(levels(titanicAll$title) %in% c("Don", "Dona", "Jonkheer","Lady","Sir", "the Countess"))] <- "Aristocrat"
+
+levels(titanicAll$title)[which(levels(titanicAll$title) %in% c("Mlle", "Ms"))] <- "Miss"
+
+levels(titanicAll$title)[which(levels(titanicAll$title) %in% c("Mme"))] <- "Mrs"
+
+feature1<-titanicAll[which(titanicAll$Test == "train"), c("Pclass", "title","Sex","Embarked","Survived")]
+
+set.seed(500)
+ind=createDataPartition(feature1$Survived,times=1,p=0.8,list=FALSE)
+train_val=feature1[ind,]
+test_val=feature1[-ind,]
+
+
+
 ```
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
-```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
